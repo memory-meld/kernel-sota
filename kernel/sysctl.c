@@ -117,8 +117,8 @@ static int __maybe_unused three = 3;
 static unsigned long zero_ul;
 static unsigned long one_ul = 1;
 static unsigned long long_max = LONG_MAX;
-#ifdef CONFIG_PRINTK
 static int ten_thousand = 10000;
+#ifdef CONFIG_PRINTK
 #endif
 #ifdef CONFIG_PERF_EVENTS
 static int six_hundred_forty_kb = 640 * 1024;
@@ -2960,6 +2960,15 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= watermark_scale_factor_sysctl_handler,
 		.extra1		= SYSCTL_ONE,
 		.extra2		= SYSCTL_THREE_THOUSAND,
+	},
+	{
+		.procname       = "demote_scale_factor",
+		.data           = &demote_scale_factor,
+		.maxlen         = sizeof(demote_scale_factor),
+		.mode           = 0644,
+		.proc_handler   = demote_scale_factor_sysctl_handler,
+		.extra1         = SYSCTL_ONE,
+		.extra2         = &ten_thousand,
 	},
 	{
 		.procname	= "percpu_pagelist_high_fraction",
