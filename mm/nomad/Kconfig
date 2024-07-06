@@ -4,3 +4,10 @@ config NOMAD
 	depends on NUMA_BALANCING && MIGRATION && X86_64 && !X86_5LEVEL
 	help
 	  Enable NOMAD support.
+
+config NOMAD_MODULE
+        tristate "NOMAD module"
+	default m
+	depends on NOMAD
+	help
+	  Enable NOMAD module.
