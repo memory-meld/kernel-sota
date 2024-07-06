@@ -859,8 +859,8 @@ static int writeout(struct address_space *mapping, struct page *page)
 /*
  * Default handling if a filesystem does not provide a migration function.
  */
-static int fallback_migrate_page(struct address_space *mapping,
-	struct page *newpage, struct page *page, enum migrate_mode mode)
+int fallback_migrate_page(struct address_space *mapping, struct page *newpage,
+			  struct page *page, enum migrate_mode mode)
 {
 	if (PageDirty(page)) {
 		/* Only writeback pages in full synchronous migration */
@@ -896,8 +896,8 @@ static int fallback_migrate_page(struct address_space *mapping,
  *   < 0 - error code
  *  MIGRATEPAGE_SUCCESS - success
  */
-static int move_to_new_page(struct page *newpage, struct page *page,
-				enum migrate_mode mode)
+int move_to_new_page(struct page *newpage, struct page *page,
+		     enum migrate_mode mode)
 {
 	struct address_space *mapping;
 	int rc = -EAGAIN;
@@ -1297,11 +1297,10 @@ out:
  * because then pte is replaced with migration swap entry and direct I/O code
  * will wait in the page fault for migration to complete.
  */
-static int unmap_and_move_huge_page(new_page_t get_new_page,
-				free_page_t put_new_page, unsigned long private,
-				struct page *hpage, int force,
-				enum migrate_mode mode, int reason,
-				struct list_head *ret)
+int unmap_and_move_huge_page(new_page_t get_new_page, free_page_t put_new_page,
+			     unsigned long private, struct page *hpage,
+			     int force, enum migrate_mode mode, int reason,
+			     struct list_head *ret)
 {
 	int rc = -EAGAIN;
 	int page_was_mapped = 0;
@@ -1426,8 +1425,8 @@ out:
 	return rc;
 }
 
-static inline int try_split_thp(struct page *page, struct page **page2,
-				struct list_head *from)
+inline int try_split_thp(struct page *page, struct page **page2,
+			 struct list_head *from)
 {
 	int rc = 0;
 

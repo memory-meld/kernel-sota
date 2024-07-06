@@ -2981,6 +2981,11 @@ static inline void wp_page_reuse(struct vm_fault *vmf)
 	flush_cache_page(vma, vmf->address, pte_pfn(vmf->orig_pte));
 	entry = pte_mkyoung(vmf->orig_pte);
 	entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+#ifdef CONFIG_NOMAD
+	if (pte_orig_writable(entry)) {
+		entry = pte_clear_orig_writable(entry);
+	}
+#endif
 	if (ptep_set_access_flags(vma, vmf->address, vmf->pte, entry, 1))
 		update_mmu_cache(vma, vmf->address, vmf->pte);
 	pte_unmap_unlock(vmf->pte, vmf->ptl);
@@ -3074,6 +3079,11 @@ static vm_fault_t wp_page_copy(struct vm_fault *vmf)
 		entry = mk_pte(new_page, vma->vm_page_prot);
 		entry = pte_sw_mkyoung(entry);
 		entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+#ifdef CONFIG_NOMAD
+		if (pte_orig_writable(entry)) {
+			entry = pte_clear_orig_writable(entry);
+		}
+#endif
 
 		/*
 		 * Clear the pte entry and flush it first, before updating the
@@ -3271,6 +3281,14 @@ static vm_fault_t do_wp_page(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
 
+#ifdef CONFIG_NOMAD
+	struct page *shadow_page = NULL;
+	struct {
+		atomic64_t *wp_counter_ptr;
+		atomic64_t *cow_counter_ptr;
+	} counters = { .wp_counter_ptr = NULL, .cow_counter_ptr = NULL };
+#endif
+
 	if (userfaultfd_pte_wp(vma, *vmf->pte)) {
 		pte_unmap_unlock(vmf->pte, vmf->ptl);
 		return handle_userfault(vmf, VM_UFFD_WP);
@@ -3308,6 +3326,25 @@ static vm_fault_t do_wp_page(struct vm_fault *vmf)
 	if (PageAnon(vmf->page)) {
 		struct page *page = vmf->page;
 
+#ifdef CONFIG_NOMAD
+		/**
+		 * whether this is a write to a shadow page write protected
+		 * page or a COW page, we should release the shadow page, if any
+		 * 1. for a WP page because of shadow paging, definitely we release it
+		 * 2. for a COW page, not sure about why. but at least it doesn't make
+		 * correctness worse.
+		*/
+		if (async_mod_glob_ctrl.initialized) {
+			if (async_mod_glob_ctrl.release_shadow_page) {
+				shadow_page =
+					async_mod_glob_ctrl.release_shadow_page(
+						page, &counters, true);
+			} else {
+				BUG();
+			}
+		}
+#endif
+
 		/* PageKsm() doesn't necessarily raise the page refcount */
 		if (PageKsm(page) || page_count(page) != 1)
 			goto copy;
@@ -3324,6 +3361,13 @@ static vm_fault_t do_wp_page(struct vm_fault *vmf)
 		 */
 		unlock_page(page);
 		wp_page_reuse(vmf);
+#ifdef CONFIG_NOMAD
+		if (counters.wp_counter_ptr) {
+			atomic64_inc(counters.wp_counter_ptr);
+		}
+		if (shadow_page)
+			put_page(shadow_page);
+#endif
 		return VM_FAULT_WRITE;
 	} else if (unlikely((vma->vm_flags & (VM_WRITE|VM_SHARED)) ==
 					(VM_WRITE|VM_SHARED))) {
@@ -4443,6 +4487,19 @@ static vm_fault_t do_numa_page(struct vm_fault *vmf)
 	last_cpupid = page_cpupid_last(page);
 	page_nid = page_to_nid(page);
 
+#ifdef CONFIG_NOMAD
+	if (async_mod_glob_ctrl.queue_page_fault) {
+		int nid = 0;
+		if (page_nid == numa_node_id()) {
+			count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+			flags |= TNF_FAULT_LOCAL;
+		}
+		nid = mpol_misplaced(page, vma, vmf->address, flags);
+		async_mod_glob_ctrl.queue_page_fault(page, vmf->pte, nid);
+		goto out_map;
+	}
+#endif
+
 	/* Only migrate pages that are active on non-toptier node */
 	if (numa_promotion_tiered_enabled &&
 		!node_is_toptier(page_nid) &&
@@ -4637,6 +4694,14 @@ static vm_fault_t handle_pte_fault(struct vm_fault *vmf)
 	if (!pte_present(vmf->orig_pte))
 		return do_swap_page(vmf);
 
+#ifdef CONFIG_NOMAD
+		// // expanded definition of NUMA pages, to keep two copies of read-only page
+		// // we some times tag the page as read-only
+		// if ((pte_protnone(vmf->orig_pte) || !pte_write(vmf->orig_pte)) &&
+		//     vma_is_accessible(vmf->vma))
+		// 	return do_numa_page(vmf);
+		//
+#endif
 	if (pte_protnone(vmf->orig_pte) && vma_is_accessible(vmf->vma))
 		return do_numa_page(vmf);
 
@@ -4695,6 +4760,9 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
 	pgd_t *pgd;
 	p4d_t *p4d;
 	vm_fault_t ret;
+#ifdef CONFIG_NOMAD
+	mm->cpu_trap_nr += 1;
+#endif
 
 	pgd = pgd_offset(mm, address);
 	p4d = p4d_alloc(mm, pgd, address);

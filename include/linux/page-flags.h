@@ -140,6 +140,10 @@ enum pageflags {
 #endif
 #ifdef CONFIG_NUMA_BALANCING
 	PG_demoted,
+#ifdef CONFIG_NOMAD
+	PG_numa_queued,
+	PG_shadowed,
+#endif
 #endif
 #ifdef CONFIG_KASAN_HW_TAGS
 	PG_skip_kasan_poison,
@@ -464,6 +468,16 @@ PAGEFLAG(Idle, idle, PF_ANY)
 TESTPAGEFLAG(Demoted, demoted, PF_NO_TAIL)
 SETPAGEFLAG(Demoted, demoted, PF_NO_TAIL)
 TESTCLEARFLAG(Demoted, demoted, PF_NO_TAIL)
+#ifdef CONFIG_NOMAD
+TESTPAGEFLAG(PromQueued, numa_queued, PF_NO_TAIL)
+SETPAGEFLAG(PromQueued, numa_queued, PF_NO_TAIL)
+TESTCLEARFLAG(PromQueued, numa_queued, PF_NO_TAIL)
+CLEARPAGEFLAG(PromQueued, numa_queued, PF_NO_TAIL)
+TESTPAGEFLAG(Shadowed, shadowed, PF_NO_TAIL)
+SETPAGEFLAG(Shadowed, shadowed, PF_NO_TAIL)
+TESTCLEARFLAG(Shadowed, shadowed, PF_NO_TAIL)
+CLEARPAGEFLAG(Shadowed, shadowed, PF_NO_TAIL)
+#endif
 #endif
 
 #ifdef CONFIG_KASAN_HW_TAGS

@@ -51,6 +51,20 @@ extern int migrate_pages(struct list_head *l, new_page_t new, free_page_t free,
 extern struct page *alloc_migration_target(struct page *page, unsigned long private);
 extern int isolate_movable_page(struct page *page, isolate_mode_t mode);
 
+#ifdef CONFIG_NOMAD
+struct nomad_context;
+extern int nomad_demotion_migrate_pages(struct list_head *l, new_page_t new,
+				  free_page_t free, unsigned long private,
+				  enum migrate_mode mode, int reason,
+				  unsigned int *nr_succeeded);
+extern int nomad_transit_pages(struct list_head *l, new_page_t new,
+			       free_page_t free, unsigned long private,
+			       enum migrate_mode mode, int reason,
+			       unsigned int *nr_succeeded,
+			       unsigned int *nr_migrated,
+			       struct nomad_context *contxt);
+#endif
+
 extern void migrate_page_states(struct page *newpage, struct page *page);
 extern void migrate_page_copy(struct page *newpage, struct page *page);
 extern int migrate_huge_page_move_mapping(struct address_space *mapping,

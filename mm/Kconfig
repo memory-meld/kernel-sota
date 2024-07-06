@@ -899,4 +899,6 @@ config SECRETMEM
 
 source "mm/damon/Kconfig"
 
+source "mm/nomad/Kconfig"
+
 endmenu

@@ -1,0 +1,6 @@
+config NOMAD
+	bool "NOMAD from OSDI24"
+	default n
+	depends on NUMA_BALANCING && MIGRATION && X86_64 && !X86_5LEVEL
+	help
+	  Enable NOMAD support.

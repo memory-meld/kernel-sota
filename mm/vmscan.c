@@ -1325,6 +1325,18 @@ static struct page *alloc_demote_page(struct page *page, unsigned long node)
 			    __GFP_NOMEMALLOC | GFP_NOWAIT,
 		.nid = node
 	};
+#ifdef CONFIG_NOMAD
+	struct page *newpage =
+		alloc_migration_target(page, (unsigned long)&mtc);
+	if (!newpage && node != first_memory_node &&
+	    async_mod_glob_ctrl.initialized &&
+	    async_mod_glob_ctrl.reclaim_page) {
+		// reclaim 10 pages each time
+		async_mod_glob_ctrl.reclaim_page(node, 10);
+		newpage = alloc_migration_target(page, (unsigned long)&mtc);
+	}
+	return newpage;
+#endif
 
 	return alloc_migration_target(page, (unsigned long)&mtc);
 }
@@ -1341,6 +1353,7 @@ static unsigned int demote_page_list(struct list_head *demote_pages,
 	unsigned int nr_succeeded;
 	int err;
 	bool file_lru;
+	typeof(migrate_pages) *migrate_pages_fn = migrate_pages;
 
 	if (list_empty(demote_pages))
 		return 0;
@@ -1350,10 +1363,15 @@ static unsigned int demote_page_list(struct list_head *demote_pages,
 
 	file_lru = page_is_file_lru(lru_to_page(demote_pages));
 
+#ifdef CONFIG_NOMAD
+	if (async_mod_glob_ctrl.initialized)
+		migrate_pages_fn = nomad_demotion_migrate_pages;
+#endif
+
 	/* Demotion ignores all cpuset and mempolicy settings */
-	err = migrate_pages(demote_pages, alloc_demote_page, NULL,
-			    target_nid, MIGRATE_ASYNC, MR_DEMOTION,
-			    &nr_succeeded);
+	err = migrate_pages_fn(demote_pages, alloc_demote_page, NULL,
+			       target_nid, MIGRATE_ASYNC, MR_DEMOTION,
+			       &nr_succeeded);
 
 	if (current_is_kswapd())
 		__count_vm_events(PGDEMOTE_KSWAPD, nr_succeeded);
@@ -2765,6 +2783,13 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
 				sc->priority == DEF_PRIORITY);
 
 	blk_start_plug(&plug);
+#ifdef CONFIG_NOMAD
+	if (async_mod_glob_ctrl.initialized &&
+	    async_mod_glob_ctrl.reclaim_page) {
+		async_mod_glob_ctrl.reclaim_page(lruvec->pgdat->node_id,
+						 nr_to_reclaim / 2);
+	}
+#endif
 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
 					nr[LRU_INACTIVE_FILE]) {
 		unsigned long nr_anon, nr_file, percentage;

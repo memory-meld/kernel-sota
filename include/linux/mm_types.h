@@ -582,6 +582,9 @@ struct mm_struct {
 #endif
 	} __randomize_layout;
 
+#ifdef CONFIG_NOMAD
+	unsigned long cpu_trap_nr;
+#endif
 	/*
 	 * The mm_cpumask needs to be at the end of mm_struct, because it
 	 * is dynamically sized based on nr_cpu_ids.

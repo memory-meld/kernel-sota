@@ -1674,12 +1674,12 @@ discard:
 	return ret;
 }
 
-static bool invalid_migration_vma(struct vm_area_struct *vma, void *arg)
+bool invalid_migration_vma(struct vm_area_struct *vma, void *arg)
 {
 	return vma_is_temporary_stack(vma);
 }
 
-static int page_not_mapped(struct page *page)
+int page_not_mapped(struct page *page)
 {
 	return !page_mapped(page);
 }
