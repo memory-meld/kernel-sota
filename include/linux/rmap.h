@@ -251,7 +251,7 @@ int page_mkclean(struct page *);
 void page_mlock(struct page *page);
 
 void remove_migration_ptes(struct page *old, struct page *new, bool locked,
-			    bool unmap_clean);
+			   bool unmap_clean);
 
 /*
  * Called by memory-failure.c to kill processes.
@@ -306,16 +306,16 @@ static inline void try_to_unmap(struct page *page, enum ttu_flags flags)
 #ifdef CONFIG_HTMM
 static inline int cooling_page(struct page *page, struct mem_cgroup *memcg)
 {
-    return false;
+	return false;
 }
 
 static inline int page_check_hotness(struct page *page, struct mem_cgroup *memcg)
 {
-    return false;
+	return false;
 }
 static int get_pginfo_idx(struct page *page)
 {
-    return -1;
+	return -1;
 }
 #endif
 
@@ -323,7 +323,6 @@ static inline int page_mkclean(struct page *page)
 {
 	return 0;
 }
-
 
 #endif	/* CONFIG_MMU */
 

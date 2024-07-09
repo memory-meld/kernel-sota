@@ -160,20 +160,20 @@ struct page {
 			struct list_head deferred_list;
 		};
 #ifdef CONFIG_HTMM
-		struct {	/* Third tail page of compound page */
-			unsigned long __compound_pad_1;	/* compound_head */
+		struct { /* Third tail page of compound page */
+			unsigned long __compound_pad_1; /* compound_head */
 			unsigned long total_accesses;
 			unsigned int hot_utils;
-			unsigned int skewness_idx;	/* current hotness val */
+			unsigned int skewness_idx; /* current hotness val */
 			unsigned int idx;
 #if 0
 			unsigned long acc_accesses;	/* prev hotness val */
 #endif
 			uint32_t cooling_clock;
 		};
-		struct {	/* Fourth~ tail pages of compound page */
-			unsigned long ___compound_pad_1;/* compound_head */
-			pginfo_t compound_pginfo[4];	/* 32 bytes */
+		struct { /* Fourth~ tail pages of compound page */
+			unsigned long ___compound_pad_1; /* compound_head */
+			pginfo_t compound_pginfo[4]; /* 32 bytes */
 		};
 #endif
 		struct {	/* Page table pages */

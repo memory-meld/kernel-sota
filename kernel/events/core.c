@@ -12765,84 +12765,80 @@ err_fd:
 }
 
 #ifndef CONFIG_HTMM
-SYSCALL_DEFINE2(htmm_start,
-		pid_t, pid, int, node)
+SYSCALL_DEFINE2(htmm_start, pid_t, pid, int, node)
 {
-    return 0;
+	return 0;
 }
 
-SYSCALL_DEFINE1(htmm_end,
-		pid_t, pid)
+SYSCALL_DEFINE1(htmm_end, pid_t, pid)
 {
-    return 0;
+	return 0;
 }
 
 #else
-SYSCALL_DEFINE2(htmm_start,
-		pid_t, pid, int, node)
+SYSCALL_DEFINE2(htmm_start, pid_t, pid, int, node)
 {
-    ksamplingd_init(pid, node);
-    return 0;
+	ksamplingd_init(pid, node);
+	return 0;
 }
 
-SYSCALL_DEFINE1(htmm_end,
-		pid_t, pid)
+SYSCALL_DEFINE1(htmm_end, pid_t, pid)
 {
-    ksamplingd_exit();
-    return 0;
+	ksamplingd_exit();
+	return 0;
 }
 
 /* allocates perf_buffer instead of calling perf_mmap() */
 int htmm__perf_event_init(struct perf_event *event, unsigned long nr_pages)
 {
-    struct perf_buffer *rb = NULL;
-    int ret = 0, flags = 0;
+	struct perf_buffer *rb = NULL;
+	int ret = 0, flags = 0;
 
-    if (event->cpu == -1 && event->attr.inherit)
-	return -EINVAL;
+	if (event->cpu == -1 && event->attr.inherit)
+		return -EINVAL;
 
-    ret = security_perf_event_read(event);
-    if (ret)
-	return ret;
+	ret = security_perf_event_read(event);
+	if (ret)
+		return ret;
 
-    if (nr_pages != 0 && !is_power_of_2(nr_pages))
-	return -EINVAL;
+	if (nr_pages != 0 && !is_power_of_2(nr_pages))
+		return -EINVAL;
 
-    WARN_ON_ONCE(event->ctx->parent_ctx);
-    mutex_lock(&event->mmap_mutex);
+	WARN_ON_ONCE(event->ctx->parent_ctx);
+	mutex_lock(&event->mmap_mutex);
 
-    WARN_ON(event->rb);
+	WARN_ON(event->rb);
 
-    rb = rb_alloc(nr_pages,
-	    event->attr.watermark ? event->attr.wakeup_watermark : 0,
-	    event->cpu, flags);
-    if (!rb) {
-	ret = -ENOMEM;
-	goto unlock;
-    }
+	rb = rb_alloc(nr_pages,
+		      event->attr.watermark ? event->attr.wakeup_watermark : 0,
+		      event->cpu, flags);
+	if (!rb) {
+		ret = -ENOMEM;
+		goto unlock;
+	}
 
-    ring_buffer_attach(event, rb);
-    perf_event_init_userpage(event);
-    perf_event_update_userpage(event);
+	ring_buffer_attach(event, rb);
+	perf_event_init_userpage(event);
+	perf_event_update_userpage(event);
 
 unlock:
-    if (!ret) {
-	atomic_inc(&event->mmap_count);
-    }
-    mutex_unlock(&event->mmap_mutex);
-    return ret;
+	if (!ret) {
+		atomic_inc(&event->mmap_count);
+	}
+	mutex_unlock(&event->mmap_mutex);
+	return ret;
 }
 
 /* sys_perf_event_open for memtis use */
-int htmm__perf_event_open(struct perf_event_attr *attr_ptr, pid_t pid,
-	int cpu, int group_fd, unsigned long flags)
+int htmm__perf_event_open(struct perf_event_attr *attr_ptr, pid_t pid, int cpu,
+			  int group_fd, unsigned long flags)
 {
 	struct perf_event *group_leader = NULL, *output_event = NULL;
 	struct perf_event *event, *sibling;
 	struct perf_event_attr attr;
 	struct perf_event_context *ctx, *gctx;
 	struct file *event_file = NULL;
-	struct fd group = {NULL, 0};
+	struct fd group = { NULL, 0 };
 	struct task_struct *task = NULL;
 	struct pmu *pmu;
 	int event_fd;
@@ -12942,8 +12938,8 @@ int htmm__perf_event_open(struct perf_event_attr *attr_ptr, pid_t pid,
 	if (flags & PERF_FLAG_PID_CGROUP)
 		cgroup_fd = pid;
 
-	event = perf_event_alloc(&attr, cpu, task, group_leader, NULL,
-				 NULL, NULL, cgroup_fd);
+	event = perf_event_alloc(&attr, cpu, task, group_leader, NULL, NULL,
+				 NULL, cgroup_fd);
 	if (IS_ERR(event)) {
 		err = PTR_ERR(event);
 		goto err_task;
@@ -13057,8 +13053,8 @@ int htmm__perf_event_open(struct perf_event_attr *attr_ptr, pid_t pid,
 			goto err_context;
 	}
 
-	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event,
-					f_flags);
+	event_file =
+		anon_inode_getfile("[perf_event]", &perf_fops, event, f_flags);
 	if (IS_ERR(event_file)) {
 		err = PTR_ERR(event_file);
 		event_file = NULL;
@@ -13115,7 +13111,7 @@ int htmm__perf_event_open(struct perf_event_attr *attr_ptr, pid_t pid,
 		if (!exclusive_event_installable(group_leader, ctx))
 			goto err_locked;
 
-		for_each_sibling_event(sibling, group_leader) {
+		for_each_sibling_event (sibling, group_leader) {
 			if (!exclusive_event_installable(sibling, ctx))
 				goto err_locked;
 		}
@@ -13178,7 +13174,7 @@ int htmm__perf_event_open(struct perf_event_attr *attr_ptr, pid_t pid,
 		perf_remove_from_context(group_leader, 0);
 		put_ctx(gctx);
 
-		for_each_sibling_event(sibling, group_leader) {
+		for_each_sibling_event (sibling, group_leader) {
 			perf_remove_from_context(sibling, 0);
 			put_ctx(gctx);
 		}
@@ -13199,7 +13195,7 @@ int htmm__perf_event_open(struct perf_event_attr *attr_ptr, pid_t pid,
 		 * By installing siblings first we NO-OP because they're not
 		 * reachable through the group lists.
 		 */
-		for_each_sibling_event(sibling, group_leader) {
+		for_each_sibling_event (sibling, group_leader) {
 			perf_event__state_init(sibling);
 			perf_install_in_context(ctx, sibling, sibling->cpu);
 			get_ctx(ctx);

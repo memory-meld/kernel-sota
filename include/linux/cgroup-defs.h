@@ -620,7 +620,6 @@ struct cftype {
 #ifdef CONFIG_HTMM /* struct cftype */
 	int numa_node_id;
 #endif
-
 };
 
 /*

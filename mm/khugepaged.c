@@ -1064,10 +1064,9 @@ static bool __collapse_huge_page_swapin(struct mm_struct *mm,
 	return true;
 }
 
-static int collapse_huge_page(struct mm_struct *mm,
-				   unsigned long address,
-				   struct page **hpage,
-				   int node, int referenced, int unmapped)
+static int collapse_huge_page(struct mm_struct *mm, unsigned long address,
+			      struct page **hpage, int node, int referenced,
+			      int unmapped)
 {
 	LIST_HEAD(compound_pagelist);
 	pmd_t *pmd, _pmd;
@@ -1096,26 +1095,26 @@ static int collapse_huge_page(struct mm_struct *mm,
 #ifdef CONFIG_HTMM
 	/* check whether there is enough free space in target memory node */
 	if (node_is_toptier(node)) {
-	    struct mem_cgroup *memcg = get_mem_cgroup_from_mm(mm);
-	    unsigned long max_nr_pages, cur_nr_pages;
-	    pg_data_t *pgdat;
+		struct mem_cgroup *memcg = get_mem_cgroup_from_mm(mm);
+		unsigned long max_nr_pages, cur_nr_pages;
+		pg_data_t *pgdat;
 
-	    if (!memcg || !memcg->htmm_enabled)
-		goto normal_exec;
+		if (!memcg || !memcg->htmm_enabled)
+			goto normal_exec;
 
-	    pgdat = NODE_DATA(node);
-	    cur_nr_pages = get_nr_lru_pages_node(memcg, pgdat);
-	    max_nr_pages = memcg->nodeinfo[node]->max_nr_base_pages;
+		pgdat = NODE_DATA(node);
+		cur_nr_pages = get_nr_lru_pages_node(memcg, pgdat);
+		max_nr_pages = memcg->nodeinfo[node]->max_nr_base_pages;
 
-	    if (max_nr_pages == ULONG_MAX)
-		goto normal_exec;
-	    else if (cur_nr_pages + HPAGE_PMD_NR <= max_nr_pages)
-		goto normal_exec;
-	    else {
-		result = SCAN_ALLOC_HUGE_PAGE_FAIL;
-		//ret = 1;
-		goto out_nolock;
-	    }
+		if (max_nr_pages == ULONG_MAX)
+			goto normal_exec;
+		else if (cur_nr_pages + HPAGE_PMD_NR <= max_nr_pages)
+			goto normal_exec;
+		else {
+			result = SCAN_ALLOC_HUGE_PAGE_FAIL;
+			//ret = 1;
+			goto out_nolock;
+		}
 	}
 normal_exec:
 	new_page = khugepaged_alloc_page(hpage, gfp, node);
@@ -1333,12 +1332,12 @@ static int khugepaged_scan_pmd(struct mm_struct *mm,
 			writable = true;
 #ifdef CONFIG_HTMM
 		if (mm->htmm_enabled) {
-		    pginfo = get_pginfo_from_pte(_pte);
-		    if (!pginfo)
-			goto out_unmap;
+			pginfo = get_pginfo_from_pte(_pte);
+			if (!pginfo)
+				goto out_unmap;
 
-		    if (!pginfo->may_hot)
-			goto out_unmap;
+			if (!pginfo->may_hot)
+				goto out_unmap;
 		}
 #endif
 		page = vm_normal_page(vma, _address, pteval);
@@ -1419,8 +1418,8 @@ out_unmap:
 	if (ret) {
 		node = khugepaged_find_target_node();
 		/* collapse_huge_page will return with the mmap_lock released */
-		ret += collapse_huge_page(mm, address, hpage, node,
-				referenced, unmapped);
+		ret += collapse_huge_page(mm, address, hpage, node, referenced,
+					  unmapped);
 	}
 out:
 	trace_mm_khugepaged_scan_pmd(mm, page, writable, referenced,
@@ -1721,9 +1720,8 @@ static void retract_page_tables(struct address_space *mapping, pgoff_t pgoff)
  *    + restore gaps in the page cache;
  *    + unlock and free huge page;
  */
-static int collapse_file(struct mm_struct *mm,
-		struct file *file, pgoff_t start,
-		struct page **hpage, int node)
+static int collapse_file(struct mm_struct *mm, struct file *file, pgoff_t start,
+			 struct page **hpage, int node)
 {
 	struct address_space *mapping = file->f_mapping;
 	gfp_t gfp;
@@ -1743,26 +1741,26 @@ static int collapse_file(struct mm_struct *mm,
 #ifdef CONFIG_HTMM
 	/* check whether there is enough free space in target memory node */
 	if (node_is_toptier(node)) {
-	    struct mem_cgroup *memcg = get_mem_cgroup_from_mm(mm);
-	    unsigned long max_nr_pages, cur_nr_pages;
-	    pg_data_t *pgdat;
+		struct mem_cgroup *memcg = get_mem_cgroup_from_mm(mm);
+		unsigned long max_nr_pages, cur_nr_pages;
+		pg_data_t *pgdat;
 
-	    if (!memcg || !memcg->htmm_enabled)
-		goto normal_exec_file;
+		if (!memcg || !memcg->htmm_enabled)
+			goto normal_exec_file;
 
-	    pgdat = NODE_DATA(node);
-	    cur_nr_pages = get_nr_lru_pages_node(memcg, pgdat);
-	    max_nr_pages = memcg->nodeinfo[node]->max_nr_base_pages;
+		pgdat = NODE_DATA(node);
+		cur_nr_pages = get_nr_lru_pages_node(memcg, pgdat);
+		max_nr_pages = memcg->nodeinfo[node]->max_nr_base_pages;
 
-	    if (max_nr_pages == ULONG_MAX)
-		goto normal_exec_file;
-	    else if (cur_nr_pages + HPAGE_PMD_NR <= max_nr_pages)
-		goto normal_exec_file;
-	    else {
-		result = SCAN_ALLOC_HUGE_PAGE_FAIL;
-		//ret = 1;
-		goto out;
-	    }
+		if (max_nr_pages == ULONG_MAX)
+			goto normal_exec_file;
+		else if (cur_nr_pages + HPAGE_PMD_NR <= max_nr_pages)
+			goto normal_exec_file;
+		else {
+			result = SCAN_ALLOC_HUGE_PAGE_FAIL;
+			//ret = 1;
+			goto out;
+		}
 	}
 normal_exec_file:
 	new_page = khugepaged_alloc_page(hpage, gfp, node);
@@ -2102,8 +2100,8 @@ out:
 	return ret;
 }
 
-static int khugepaged_scan_file(struct mm_struct *mm,
-		struct file *file, pgoff_t start, struct page **hpage)
+static int khugepaged_scan_file(struct mm_struct *mm, struct file *file,
+				pgoff_t start, struct page **hpage)
 {
 	struct page *page = NULL;
 	struct address_space *mapping = file->f_mapping;
@@ -2179,8 +2177,8 @@ static int khugepaged_scan_file(struct mm_struct *mm,
 	return 1;
 }
 #else
-static int khugepaged_scan_file(struct mm_struct *mm,
-		struct file *file, pgoff_t start, struct page **hpage)
+static int khugepaged_scan_file(struct mm_struct *mm, struct file *file,
+				pgoff_t start, struct page **hpage)
 {
 	BUILD_BUG();
 }

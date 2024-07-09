@@ -14,8 +14,8 @@ TRACE_EVENT(access_info,
 	TP_ARGS(nr_access, nr_util),
 
 	TP_STRUCT__entry(
-		__field(unsigned int,	nr_access)
-		__field(unsigned int,	nr_util)
+		__field(unsigned int, nr_access)
+		__field(unsigned int, nr_util)
 	),
 
 	TP_fast_assign(
@@ -24,20 +24,22 @@ TRACE_EVENT(access_info,
 	),
 
 	TP_printk("nr_access: %u nr_util: %u\n",
-		__entry->nr_access, __entry->nr_util)
+		__entry->nr_access,
+		__entry->nr_util)
 );
 
 TRACE_EVENT(base_access_info,
 
-	TP_PROTO(unsigned long addr, unsigned int clock, unsigned int nr_access, unsigned int nr_util),
+	TP_PROTO(unsigned long addr, unsigned int clock,
+		     unsigned int nr_access, unsigned int nr_util),
 
 	TP_ARGS(addr, clock, nr_access, nr_util),
 
 	TP_STRUCT__entry(
-		__field(unsigned long,	addr)
-		__field(unsigned int,	clock)
-		__field(unsigned int,	nr_access)
-		__field(unsigned int,	nr_util)
+		__field(unsigned long, addr)
+		__field(unsigned int, clock)
+		__field(unsigned int, nr_access)
+		__field(unsigned int, nr_util)
 	),
 
 	TP_fast_assign(
@@ -48,7 +50,10 @@ TRACE_EVENT(base_access_info,
 	),
 
 	TP_printk("addr: %lu clock: %u nr_access: %u nr_util: %u\n",
-		__entry->addr, __entry->clock, __entry->nr_access, __entry->nr_util)
+		__entry->addr,
+		__entry->clock,
+		__entry->nr_access,
+		__entry->nr_util)
 );
 
 #endif

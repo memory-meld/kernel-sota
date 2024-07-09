@@ -3895,15 +3895,15 @@ static vm_fault_t do_anonymous_page(struct vm_fault *vmf)
 	}
 #ifdef CONFIG_HTMM
 	do {
-	    struct mem_cgroup *memcg = get_mem_cgroup_from_mm(vma->vm_mm);
-	    if (!memcg) {
-		ClearPageActive(page);
-	    }
+		struct mem_cgroup *memcg = get_mem_cgroup_from_mm(vma->vm_mm);
+		if (!memcg) {
+			ClearPageActive(page);
+		}
 	} while (0);
 	if (page != NULL && node_is_toptier(page_to_nid(page)))
-	    count_vm_event(HTMM_ALLOC_DRAM);
+		count_vm_event(HTMM_ALLOC_DRAM);
 	else
-	    count_vm_event(HTMM_ALLOC_NVM);
+		count_vm_event(HTMM_ALLOC_NVM);
 #endif
 	inc_mm_counter_fast(vma->vm_mm, MM_ANONPAGES);
 	page_add_new_anon_rmap(page, vma, vmf->address, false);

@@ -215,7 +215,6 @@ static inline bool mpol_is_preferred_many(struct mempolicy *pol)
 	return  (pol->mode == MPOL_PREFERRED_MANY);
 }
 
-
 #else
 
 struct mempolicy {};
