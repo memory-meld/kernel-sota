@@ -107,6 +107,14 @@
 #define IF_HAVE_PG_SKIP_KASAN_POISON(flag,string)
 #endif
 
+#ifdef CONFIG_HTMM
+#define IF_HAVE_PG_HTMM(flag,string) ,{1UL << flag, string}
+#define IF_HAVE_PG_NEEDSPLIT(flag,string) ,{1UL << flag, string}
+#else
+#define IF_HAVE_PG_HTMM(flag,string)
+#define IF_HAVE_PG_NEEDSPLIT(flag,string)
+#endif
+
 #define __def_pageflag_names						\
 	{1UL << PG_locked,		"locked"	},		\
 	{1UL << PG_waiters,		"waiters"	},		\
@@ -138,7 +146,9 @@ IF_HAVE_PG_ARCH_2(PG_arch_2,		"arch_2"	)		\
 IF_HAVE_PG_DEMOTED(PG_demoted,		"demoted"	)		\
 IF_HAVE_PG_NUMA_QUEUED(PG_numa_queued,  "promqueued"	)		\
 IF_HAVE_PG_SHADOWED(PG_shadowed,        "shadowed"	)               \
-IF_HAVE_PG_SKIP_KASAN_POISON(PG_skip_kasan_poison, "skip_kasan_poison")
+IF_HAVE_PG_SKIP_KASAN_POISON(PG_skip_kasan_poison, "skip_kasan_poison")	\
+IF_HAVE_PG_HTMM(PG_htmm,		"htmm"		)		\
+IF_HAVE_PG_NEEDSPLIT(PG_needsplit,	"needsplit"	)
 
 #define show_page_flags(flags)						\
 	(flags) ? __print_flags(flags, "|",				\

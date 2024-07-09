@@ -590,7 +590,7 @@ unsigned long zone_reclaimable_pages(struct zone *zone)
  * @lru: lru to use
  * @zone_idx: zones to consider (use MAX_NR_ZONES for the whole LRU list)
  */
-static unsigned long lruvec_lru_size(struct lruvec *lruvec, enum lru_list lru,
+unsigned long lruvec_lru_size(struct lruvec *lruvec, enum lru_list lru,
 				     int zone_idx)
 {
 	unsigned long size = 0;
@@ -2116,7 +2116,7 @@ static int too_many_isolated(struct pglist_data *pgdat, int file,
  *
  * Returns the number of pages moved to the given lruvec.
  */
-static unsigned int move_pages_to_lru(struct lruvec *lruvec,
+unsigned int move_pages_to_lru(struct lruvec *lruvec,
 				      struct list_head *list)
 {
 	int nr_pages, nr_moved = 0;
