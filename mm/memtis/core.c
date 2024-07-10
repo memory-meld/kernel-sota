@@ -17,7 +17,7 @@
 #include <linux/random.h>
 #include <trace/events/htmm.h>
 
-#include "internal.h"
+#include "../internal.h"
 #include <asm/pgtable.h>
 
 void htmm_mm_init(struct mm_struct *mm)
@@ -1132,9 +1132,9 @@ static void set_memcg_nr_split(struct mem_cgroup *memcg)
 		return;
 
 	/* cooling halves the access counts so that
-     * NR_SAMPLE(n) = cooling_period + NR_SAMPLE(n-1) / 2
-     * --> n = htmm_cooling_period * 2 - (htmm_cooling_period >> cooling_counts)
-     */
+	 * NR_SAMPLE(n) = cooling_period + NR_SAMPLE(n-1) / 2
+	 * --> n = htmm_cooling_period * 2 - (htmm_cooling_period >> cooling_counts)
+	 */
 	avg_accesses_hp = memcg->sum_util / memcg->num_util;
 	if (avg_accesses_hp == 0)
 		return;
@@ -1142,11 +1142,11 @@ static void set_memcg_nr_split(struct mem_cgroup *memcg)
 	nr_records = (htmm_cooling_period << 1) - (htmm_cooling_period >> (memcg->cooling_clock - 1));
 
 	/* N = (eHR - rHR) * (nr_samples / avg_accesses_hp) * (delta lat / fast lat);
-     * >> (eHR - rHR) == ('ehr' - 'rhr') / 'nr_records';
-     * >> 'ehr' - 'rhr' == (eHR - rHR) * nr_records
-     * To reflect actual accesses to huge pages, calibrates nr_records to
-     * memcg->sum_util;
-     */
+	 * >> (eHR - rHR) == ('ehr' - 'rhr') / 'nr_records';
+	 * >> 'ehr' - 'rhr' == (eHR - rHR) * nr_records
+	 * To reflect actual accesses to huge pages, calibrates nr_records to
+	 * memcg->sum_util;
+	 */
 	memcg->nr_split = (ehr - rhr) * memcg->sum_util / nr_records;
 	memcg->nr_split /= avg_accesses_hp;
 	/* reflects latency gap */
@@ -1275,7 +1275,7 @@ static void __adjust_active_threshold(struct mm_struct *mm, struct mem_cgroup *m
 			set_lru_adjusting(memcg, true);
 		} else if (memcg->split_happen && htmm_thres_split && idx_hot < memcg->active_threshold) {
 			/* if split happens, histogram may be changed.
-	     * Thus, hot-thres could be decreased */
+			 * Thus, hot-thres could be decreased */
 			memcg->active_threshold = idx_hot;
 			set_lru_adjusting(memcg, true);
 			//memcg->split_happen = false;
@@ -1371,16 +1371,16 @@ void update_pginfo(pid_t pid, unsigned long address, enum events e)
 			if (!memcg->need_split && htmm_thres_split) {
 				unsigned long usage = page_counter_read(&memcg->memory);
 				/* htmm_split_period: 2 by default
-		 * This means that the number of sampled records should
-		 * exceed a quarter of the WSS
-		 */
+				 * This means that the number of sampled records should
+				 * exceed a quarter of the WSS
+				 */
 				usage >>= htmm_split_period;
 				// the num. of samples must be larger than the fast tier size.
 				usage = max(usage, memcg->max_nr_dram_pages);
 
 				if (memcg->nr_sampled_for_split > usage) {
 					/* if split is already performed in the previous
-		     * and rhr is not improved, stop split huge pages */
+					 * and rhr is not improved, stop split huge pages */
 					if (memcg->split_happen) {
 						if (memcg->prev_dram_sampled < (temp_rhr * 103 / 100)) { // 3%
 							htmm_thres_split = 0;
