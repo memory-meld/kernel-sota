@@ -132,3 +132,4 @@ obj-$(CONFIG_HAVE_BOOTMEM_INFO_NODE) += bootmem_info.o
 obj-$(CONFIG_GENERIC_IOREMAP) += ioremap.o
 obj-$(CONFIG_NOMAD) += nomad/
 obj-$(CONFIG_HTMM) += memtis/
+obj-$(CONFIG_HAGENT) += hagent/
