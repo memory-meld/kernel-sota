@@ -1077,7 +1077,8 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p,
 	mm->pmd_huge_pte = NULL;
 #endif
 #ifdef CONFIG_HTMM
-	htmm_mm_init(mm);
+	if (p != &init_task)
+		htmm_mm_init(mm);
 #endif
 	mm_init_uprobes_state(mm);
 	hugetlb_count_init(mm);
