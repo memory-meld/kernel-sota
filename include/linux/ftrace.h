@@ -902,6 +902,7 @@ struct ftrace_graph_ent {
  */
 struct ftrace_graph_ret {
 	unsigned long func; /* Current function */
+	unsigned long retval;
 	int depth;
 	/* Number of functions that overran the depth limit for current task */
 	unsigned int overrun;

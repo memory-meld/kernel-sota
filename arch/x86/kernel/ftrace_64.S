@@ -340,6 +340,8 @@ SYM_FUNC_START(return_to_handler)
 	movq %rax, (%rsp)
 	movq %rdx, 8(%rsp)
 	movq %rbp, %rdi
+	/* Pass the return value to ftrace_return_to_handler */
+	movq %rax, %rsi
 
 	call ftrace_return_to_handler
 

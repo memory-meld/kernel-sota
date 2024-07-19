@@ -184,6 +184,7 @@ SYM_CODE_END(ftrace_graph_caller)
 return_to_handler:
 	pushl	%eax
 	pushl	%edx
+	movl	%eax, %edx	#  2nd argument: the return value
 	movl	$0, %eax
 	call	ftrace_return_to_handler
 	movl	%eax, %ecx

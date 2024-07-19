@@ -58,6 +58,8 @@ static struct tracer_opt trace_opts[] = {
 	{ TRACER_OPT(funcgraph-irqs, TRACE_GRAPH_PRINT_IRQS) },
 	/* Display function name after trailing } */
 	{ TRACER_OPT(funcgraph-tail, TRACE_GRAPH_PRINT_TAIL) },
+	/* Display function return value */
+	{ TRACER_OPT(funcgraph-retval, TRACE_GRAPH_PRINT_RETVAL) },
 	/* Include sleep time (scheduled out) between entry and return */
 	{ TRACER_OPT(sleep-time, TRACE_GRAPH_SLEEP_TIME) },
 
@@ -619,6 +621,43 @@ print_graph_duration(struct trace_array *tr, unsigned long long duration,
 	trace_seq_puts(s, "|  ");
 }
 
+static void print_graph_retval(struct trace_seq *s, unsigned long retval,
+				bool leaf, void *func)
+{
+	unsigned long err_code = 0;
+
+	if (retval == 0)
+		goto done;
+
+	/* Guess whether the retval looks like an error code */
+	if ((retval & BIT(7)) && (retval >> 8) == 0)
+		err_code = (unsigned long)(s8)retval;
+	else if ((retval & BIT(15)) && (retval >> 16) == 0)
+		err_code = (unsigned long)(s16)retval;
+	else if ((retval & BIT(31)) && (((u64)retval) >> 32) == 0)
+		err_code = (unsigned long)(s32)retval;
+	else
+		err_code = retval;
+
+	if (!IS_ERR_VALUE(err_code))
+		err_code = 0;
+
+done:
+	if (leaf) {
+		if (err_code != 0)
+			trace_seq_printf(s, "%ps(); /* => %lx %ld */\n",
+				func, retval, err_code);
+		else
+			trace_seq_printf(s, "%ps(); /* => %lx */\n", func, retval);
+	} else {
+		if (err_code != 0)
+			trace_seq_printf(s, "} /* %ps => %lx %ld */\n",
+				func, retval, err_code);
+		else
+			trace_seq_printf(s, "} /* %ps => %lx */\n", func, retval);
+	}
+}
+
 /* Case of a leaf function on its call entry */
 static enum print_line_t
 print_graph_entry_leaf(struct trace_iterator *iter,
@@ -663,7 +702,10 @@ print_graph_entry_leaf(struct trace_iterator *iter,
 	for (i = 0; i < call->depth * TRACE_GRAPH_INDENT; i++)
 		trace_seq_putc(s, ' ');
 
-	trace_seq_printf(s, "%ps();\n", (void *)call->func);
+	if (flags & TRACE_GRAPH_PRINT_RETVAL)
+		print_graph_retval(s, graph_ret->retval, true, (void *)call->func);
+	else
+		trace_seq_printf(s, "%ps();\n", (void *)call->func);
 
 	print_graph_irq(iter, graph_ret->func, TRACE_GRAPH_RET,
 			cpu, iter->ent->pid, flags);
@@ -942,17 +984,25 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
 		trace_seq_putc(s, ' ');
 
 	/*
-	 * If the return function does not have a matching entry,
-	 * then the entry was lost. Instead of just printing
-	 * the '}' and letting the user guess what function this
-	 * belongs to, write out the function name. Always do
-	 * that if the funcgraph-tail option is enabled.
+	 * Always write out the function name and its return value if the
+	 * function-retval option is enabled.
 	 */
-	if (func_match && !(flags & TRACE_GRAPH_PRINT_TAIL))
-		trace_seq_puts(s, "}\n");
-	else
-		trace_seq_printf(s, "} /* %ps */\n", (void *)trace->func);
-
+	if (flags & TRACE_GRAPH_PRINT_RETVAL) {
+		print_graph_retval(s, trace->retval, false, (void *)trace->func);
+	} else {
+		/*
+		 * If the return function does not have a matching entry,
+		 * then the entry was lost. Instead of just printing
+		 * the '}' and letting the user guess what function this
+		 * belongs to, write out the function name. Always do
+		 * that if the funcgraph-tail option is enabled.
+		 */
+		if (func_match && !(flags & TRACE_GRAPH_PRINT_TAIL))
+			trace_seq_puts(s, "}\n");
+		else
+			trace_seq_printf(s, "} /* %ps */\n", (void *)trace->func);
+	}
+ 
 	/* Overrun */
 	if (flags & TRACE_GRAPH_PRINT_OVERRUN)
 		trace_seq_printf(s, " (Overruns: %u)\n",
