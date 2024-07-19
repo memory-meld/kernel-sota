@@ -1,6 +1,7 @@
 #ifndef _LINUX_HTMM_H
 #define _LINUX_HTMM_H
 #include <linux/mm.h>
+#include <linux/errname.h>
 #include <uapi/linux/perf_event.h>
 
 #define DEFERRED_SPLIT_ISOLATED 1

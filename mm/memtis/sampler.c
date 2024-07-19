@@ -47,44 +47,34 @@ static __u64 get_pebs_event(enum events e)
 
 static int pebs_event_open(__u64 config, __u64 config1, __u64 cpu, __u64 type, __u32 pid)
 {
-	struct perf_event_attr attr;
-	struct file *file;
-	int event_fd, __pid;
-
-	memset(&attr, 0, sizeof(struct perf_event_attr));
-
-	attr.type = PERF_TYPE_RAW;
-	attr.size = sizeof(struct perf_event_attr);
-	attr.config = config;
-	attr.config1 = config1;
-	if (config == ALL_STORES)
-		attr.sample_period = htmm_inst_sample_period;
-	else
-		attr.sample_period = get_sample_period(0);
-	attr.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_ADDR;
-	attr.disabled = 0;
-	attr.exclude_kernel = 1;
-	attr.exclude_hv = 1;
-	attr.exclude_callchain_kernel = 1;
-	attr.exclude_callchain_user = 1;
-	attr.precise_ip = 1;
-	attr.enable_on_exec = 1;
-
-	if (pid == 0)
-		__pid = -1;
-	else
-		__pid = pid;
-
-	event_fd = htmm__perf_event_open(&attr, __pid, cpu, -1, 0);
+	struct perf_event_attr attr = {
+		.type = PERF_TYPE_RAW,
+		.size = sizeof(struct perf_event_attr),
+		.config = config,
+		.config1 = config1,
+		.sample_period = config == ALL_STORES ? htmm_inst_sample_period : get_sample_period(0),
+		.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID | PERF_SAMPLE_ADDR,
+		.disabled = 0,
+		.exclude_kernel = 1,
+		.exclude_hv = 1,
+		.exclude_callchain_kernel = 1,
+		.exclude_callchain_user = 1,
+		// .precise_ip = 1,
+		.precise_ip = 3,
+		// .enable_on_exec = 1,
+		.inherit = 1,
+	};
+	int event_fd = htmm__perf_event_open(&attr, pid ?: -1, cpu, -1, 0);
 	//event_fd = htmm__perf_event_open(&attr, -1, cpu, -1, 0);
 	if (event_fd <= 0) {
-		printk("[error htmm__perf_event_open failure] event_fd: %d\n", event_fd);
+		pr_err("%s: htmm__perf_event_open(config=0x%lx, config1=0x%lx, sample_period=%lu, type=0x%lx) = %d (%s)\n",
+			__func__, config, config1, attr.sample_period, attr.sample_period, event_fd, errname(event_fd)
+		);
 		return -1;
 	}
 
-	file = fget(event_fd);
-	if (!file) {
-		printk("invalid file\n");
+	if (!fget(event_fd)) {
+		pr_err("invalid file\n");
 		return -1;
 	}
 	mem_event[cpu][type] = fget(event_fd)->private_data;
@@ -100,7 +90,7 @@ static int pebs_init(pid_t pid, int node)
 		mem_event[cpu] = kzalloc(sizeof(struct perf_event *) * N_HTMMEVENTS, GFP_KERNEL);
 	}
 
-	printk("pebs_init\n");
+	pr_info("pebs_init\n");
 	for (cpu = 0; cpu < CPUS_PER_SOCKET; cpu++) {
 		for (event = 0; event < N_HTMMEVENTS; event++) {
 			if (get_pebs_event(event) == N_HTMMEVENTS) {
@@ -122,7 +112,7 @@ static void pebs_disable(void)
 {
 	int cpu, event;
 
-	printk("pebs disable\n");
+	pr_info("pebs disable\n");
 	for (cpu = 0; cpu < CPUS_PER_SOCKET; cpu++) {
 		for (event = 0; event < N_HTMMEVENTS; event++) {
 			if (mem_event[cpu][event])
@@ -135,7 +125,7 @@ static void pebs_enable(void)
 {
 	int cpu, event;
 
-	printk("pebs enable\n");
+	pr_info("pebs enable\n");
 	for (cpu = 0; cpu < CPUS_PER_SOCKET; cpu++) {
 		for (event = 0; event < N_HTMMEVENTS; event++) {
 			if (mem_event[cpu][event])
@@ -169,7 +159,7 @@ static void pebs_update_period(uint64_t value, uint64_t inst_value)
 			}
 
 			if (ret == -EINVAL)
-				printk("failed to update sample period");
+				pr_err("failed to update sample period");
 		}
 	}
 }
@@ -239,7 +229,7 @@ static int ksamplingd(void *data)
 
 					rb = mem_event[cpu][event]->rb;
 					if (!rb) {
-						printk("event->rb is NULL\n");
+						pr_err("event->rb is NULL\n");
 						return -1;
 					}
 					/* perf_buffer is ring buffer */
@@ -380,8 +370,8 @@ static int ksamplingd(void *data)
 	total_runtime = (t->se.sum_exec_runtime) - total_runtime; // ns
 	total_cputime = jiffies_to_usecs(jiffies - total_cputime); // us
 
-	printk("nr_sampled: %llu, nr_throttled: %llu, nr_lost: %llu\n", nr_sampled, nr_throttled, nr_lost);
-	printk("total runtime: %llu ns, total cputime: %lu us, cpu usage: %llu\n", total_runtime, total_cputime,
+	pr_info("nr_sampled: %llu, nr_throttled: %llu, nr_lost: %llu\n", nr_sampled, nr_throttled, nr_lost);
+	pr_info("total runtime: %llu ns, total cputime: %lu us, cpu usage: %llu\n", total_runtime, total_cputime,
 	       (total_runtime) / total_cputime);
 
 	return 0;
@@ -410,7 +400,7 @@ int ksamplingd_init(pid_t pid, int node)
 
 	ret = pebs_init(pid, node);
 	if (ret) {
-		printk("htmm__perf_event_init failure... ERROR:%d\n", ret);
+		pr_err("htmm__perf_event_init failure... ERROR:%d\n", ret);
 		return 0;
 	}
 
