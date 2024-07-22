@@ -7,7 +7,8 @@
 #define DEFERRED_SPLIT_ISOLATED 1
 
 #define BUFFER_SIZE 32 /* 128: 1MB */
-#define CPUS_PER_SOCKET 20
+#define HTMM_CPUS num_online_cpus()
+#define CPU_NODE first_node(node_states[N_CPU])
 #define MAX_MIGRATION_RATE_IN_MBPS 2048 /* 2048MB per sec */
 
 /* pebs events */
