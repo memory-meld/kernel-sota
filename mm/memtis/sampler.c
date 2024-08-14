@@ -267,7 +267,7 @@ static int ksamplingd(void *data)
 						}
 
 						update_pginfo(he->pid, he->addr, event);
-						//count_vm_event(HTMM_NR_SAMPLED);
+						count_vm_event(PEBS_NR_SAMPLED);
 						nr_sampled++;
 
 						if (event == DRAMREAD) {

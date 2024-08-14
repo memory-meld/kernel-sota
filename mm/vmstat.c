@@ -1319,6 +1319,9 @@ const char * const vmstat_text[] = {
 	"thp_migration_fail",
 	"thp_migration_split",
 #endif
+	"pebs_nr_sampled",
+	"pebs_nr_sampled_fmem",
+	"pebs_nr_sampled_smem",
 #ifdef CONFIG_COMPACTION
 	"compact_migrate_scanned",
 	"compact_free_scanned",
@@ -1378,7 +1381,6 @@ const char * const vmstat_text[] = {
 #ifdef CONFIG_HTMM
 	"htmm_nr_promoted",
 	"htmm_nr_demoted",
-	"htmm_nr_sampled",
 	"htmm_missed_dramread",
 	"htmm_missed_nvmread",
 	"htmm_missed_write",

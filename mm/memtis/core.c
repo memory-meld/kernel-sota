@@ -998,7 +998,7 @@ static int __update_pte_pginfo(struct vm_area_struct *vma, pmd_t *pmd, unsigned 
 	update_base_page(vma, page, pginfo);
 	pte_unmap_unlock(pte, ptl);
 	if (htmm_cxl_mode) {
-		if (page_to_nid(page) == 0)
+		if (node_is_toptier(page_to_nid(page)))
 			return 1;
 		else
 			return 2;
@@ -1048,7 +1048,7 @@ static int __update_pmd_pginfo(struct vm_area_struct *vma, pud_t *pud, unsigned 
 
 		update_huge_page(vma, pmd, page, address);
 		if (htmm_cxl_mode) {
-			if (page_to_nid(page) == 0)
+			if (node_is_toptier(page_to_nid(page)))
 				return 1;
 			else
 				return 2;
@@ -1341,11 +1341,13 @@ void update_pginfo(pid_t pid, unsigned long address, enum events e)
 	/* increase sample counts only for valid records */
 	ret = __update_pginfo(vma, address);
 	if (ret == 1) { /* memory accesses to DRAM */
+		count_vm_event(PEBS_NR_SAMPLED_FMEM);
 		memcg->nr_sampled++;
 		memcg->nr_sampled_for_split++;
 		memcg->nr_dram_sampled++;
 		memcg->nr_max_sampled++;
 	} else if (ret == 2) {
+		count_vm_event(PEBS_NR_SAMPLED_SMEM);
 		memcg->nr_sampled++;
 		memcg->nr_sampled_for_split++;
 		memcg->nr_max_sampled++;
