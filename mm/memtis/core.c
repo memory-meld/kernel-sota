@@ -1066,7 +1066,7 @@ static int __update_pmd_pginfo(struct vm_area_struct *vma, pud_t *pud, unsigned 
 	return __update_pte_pginfo(vma, pmd, address);
 }
 
-static int __update_pginfo(struct vm_area_struct *vma, unsigned long address)
+int __update_pginfo(struct vm_area_struct *vma, unsigned long address)
 {
 	pgd_t *pgd;
 	p4d_t *p4d;
@@ -1086,6 +1086,7 @@ static int __update_pginfo(struct vm_area_struct *vma, unsigned long address)
 
 	return __update_pmd_pginfo(vma, pud, address);
 }
+EXPORT_SYMBOL(__update_pginfo);
 
 static void set_memcg_split_thres(struct mem_cgroup *memcg)
 {
@@ -1307,8 +1308,7 @@ static bool need_memcg_cooling(struct mem_cgroup *memcg)
 
 void update_pginfo(pid_t pid, unsigned long address, enum events e)
 {
-	struct pid *pid_struct = find_get_pid(pid);
-	struct task_struct *p = pid_struct ? pid_task(pid_struct, PIDTYPE_PID) : NULL;
+	struct task_struct *p = find_get_task_by_vpid(pid);
 	struct mm_struct *mm = p ? p->mm : NULL;
 	struct vm_area_struct *vma;
 	struct mem_cgroup *memcg;
@@ -1411,5 +1411,6 @@ void update_pginfo(pid_t pid, unsigned long address, enum events e)
 mmap_unlock:
 	mmap_read_unlock(mm);
 put_task:
-	put_pid(pid_struct);
+	if (p)
+		put_task_struct(p);
 }

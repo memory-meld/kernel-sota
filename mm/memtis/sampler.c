@@ -366,7 +366,7 @@ static int ksamplingd(void *data)
 
 	pr_info("nr_sampled: %llu, nr_throttled: %llu, nr_lost: %llu\n", nr_sampled, nr_throttled, nr_lost);
 	pr_info("total runtime: %llu ns, total cputime: %lu us, cpu usage: %llu\n", total_runtime, total_cputime,
-	       (total_runtime) / total_cputime);
+	       total_runtime / (total_cputime + 1));
 
 	return 0;
 }
