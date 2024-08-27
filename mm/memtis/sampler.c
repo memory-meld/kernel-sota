@@ -195,12 +195,6 @@ static int ksamplingd(void *data)
 	trace_cputime = total_cputime = elapsed_cputime = jiffies;
 	sleep_timeout = usecs_to_jiffies(2000);
 
-	/* TODO implements per-CPU node ksamplingd by using pg_data_t */
-	/* Currently uses a single CPU node(0) */
-	const struct cpumask *cpumask = cpumask_of_node(CPU_NODE);
-	if (!cpumask_empty(cpumask))
-		do_set_cpus_allowed(access_sampling, cpumask);
-
 	while (!kthread_should_stop()) {
 		int cpu, event, cond = false;
 
@@ -382,11 +376,17 @@ static int ksamplingd_run(void)
 	int err = 0;
 
 	if (!access_sampling) {
-		access_sampling = kthread_run(ksamplingd, NULL, "ksamplingd");
+		access_sampling = kthread_create(ksamplingd, NULL, "ksamplingd");
 		if (IS_ERR(access_sampling)) {
 			err = PTR_ERR(access_sampling);
 			access_sampling = NULL;
 		}
+		/* TODO implements per-CPU node ksamplingd by using pg_data_t */
+		/* Currently uses a single CPU node(0) */
+		const struct cpumask *cpumask = cpumask_of_node(CPU_NODE);
+		if (!cpumask_empty(cpumask))
+			do_set_cpus_allowed(access_sampling, cpumask);
+		wake_up_process(access_sampling);
 	}
 	return err;
 }
@@ -409,9 +409,9 @@ int ksamplingd_init(pid_t pid, int node)
 
 void ksamplingd_exit(void)
 {
+	pebs_disable();
 	if (access_sampling) {
 		kthread_stop(access_sampling);
 		access_sampling = NULL;
 	}
-	pebs_disable();
 }
