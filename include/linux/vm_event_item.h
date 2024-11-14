@@ -79,6 +79,21 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
 		PEBS_NR_SAMPLED,
 		PEBS_NR_SAMPLED_FMEM,
 		PEBS_NR_SAMPLED_SMEM,
+		//        | Samping                | Classification                           | Migration
+		// -------+------------------------+------------------------------------------+--------------------------
+		// TPP    | PTEA_SCAN_NS           | LRU_ROTATE_NS - PTEA_SCAN_NS - DEMOTE_NS | DEMOTE_NS + HINT_FAULT_NS
+		// Nomad  | PTEA_SCAN_NS           | LRU_ROTATE_NS - PTEA_SCAN_NS - DEMOTE_NS | DEMOTE_NS + HINT_FAULT_NS
+		// Memtis | SAMPLING_NS - PTEXT_NS | LRU_ROTATE_NS + PTEXT_NS                 | DEMOTE_NS + PROMOTE_NS
+		PTEA_SCAN_NS,	// Only record the rmap overhead
+		PTEA_SCANNED,	// Record rmap walked PTEs
+		LRU_ROTATE_NS,  // Overhead spent on selecting reclaimation candidates
+				// (include PTEA_SCAN_NS and DEMOTE_NS in TPP/Nomad)
+		DEMOTE_NS,	// Cost of demoting reclaimation candidates
+		HINT_FAULT_NS,	// Software-only overhead spent on NUMA hinting faults
+				// (include triggering overhead)
+		PROMOTE_NS,	// Memtis promotion candidates migration cost
+		SAMPLING_NS,	// Memtis ksamplingd cost (include PTEXT_NS)
+		PTEXT_NS,	// Memtis pagetable extension maintance cost
 #ifdef CONFIG_COMPACTION
 		COMPACTMIGRATE_SCANNED, COMPACTFREE_SCANNED,
 		COMPACTISOLATED,

@@ -860,9 +860,10 @@ int page_referenced(struct page *page,
 		    struct mem_cgroup *memcg,
 		    unsigned long *vm_flags)
 {
-	int we_locked = 0;
+	guard(vmstat_stopwatch)(PTEA_SCAN_NS);
+	int we_locked = 0, mapcount = total_mapcount(page);
 	struct page_referenced_arg pra = {
-		.mapcount = total_mapcount(page),
+		.mapcount = mapcount,
 		.memcg = memcg,
 	};
 	struct rmap_walk_control rwc = {
@@ -899,6 +900,7 @@ int page_referenced(struct page *page,
 	if (we_locked)
 		unlock_page(page);
 
+	count_vm_events(PTEA_SCANNED, mapcount);
 	return pra.referenced;
 }
 

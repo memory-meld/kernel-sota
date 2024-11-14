@@ -360,6 +360,7 @@ static unsigned long shrink_page_list(struct list_head *page_list, pg_data_t *pg
 
 	cond_resched();
 
+	guard(vmstat_stopwatch)(DEMOTE_NS);
 	while (!list_empty(page_list)) {
 		struct page *page;
 
@@ -380,6 +381,7 @@ static unsigned long shrink_page_list(struct list_head *page_list, pg_data_t *pg
 			goto keep_locked;
 
 		if (htmm_nowarm == 0 && PageAnon(page)) {
+			guard(vmstat_stopwatch)(PTEXT_NS);
 			if (PageTransHuge(page)) {
 				struct page *meta = get_meta_page(page);
 
@@ -420,6 +422,7 @@ static unsigned long promote_page_list(struct list_head *page_list, pg_data_t *p
 
 	cond_resched();
 
+	guard(vmstat_stopwatch)(PROMOTE_NS);
 	while (!list_empty(page_list)) {
 		struct page *page;
 
@@ -916,6 +919,7 @@ static int kmigraterd_demotion(pg_data_t *pgdat)
 		set_cpus_allowed_ptr(pgdat->kmigraterd, cpumask);
 
 	for (;;) {
+		guard(vmstat_stopwatch)(LRU_ROTATE_NS);
 		struct mem_cgroup_per_node *pn;
 		struct mem_cgroup *memcg;
 		unsigned long nr_exceeded = 0;
@@ -984,6 +988,7 @@ static int kmigraterd_promotion(pg_data_t *pgdat)
 		set_cpus_allowed_ptr(pgdat->kmigraterd, cpumask);
 
 	for (;;) {
+		guard(vmstat_stopwatch)(LRU_ROTATE_NS);
 		struct mem_cgroup_per_node *pn;
 		struct mem_cgroup *memcg;
 		LIST_HEAD(split_list);

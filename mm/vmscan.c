@@ -1350,11 +1350,12 @@ static struct page *alloc_demote_page(struct page *page, unsigned long node)
 static unsigned int demote_page_list(struct list_head *demote_pages,
 				     struct pglist_data *pgdat)
 {
+	guard(vmstat_stopwatch)(DEMOTE_NS);
 	int target_nid = next_demotion_node(pgdat->node_id);
 	unsigned int nr_succeeded;
 	int err;
 	bool file_lru;
-	typeof(migrate_pages) *migrate_pages_fn = migrate_pages;
+	__auto_type *migrate_pages_fn = migrate_pages;
 
 	if (list_empty(demote_pages))
 		return 0;
@@ -2755,6 +2756,7 @@ static bool can_age_anon_pages(struct pglist_data *pgdat,
 
 static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
 {
+	guard(vmstat_stopwatch)(LRU_ROTATE_NS);
 	unsigned long nr[NR_LRU_LISTS];
 	unsigned long targets[NR_LRU_LISTS];
 	unsigned long nr_to_scan;

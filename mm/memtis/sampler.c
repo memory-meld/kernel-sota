@@ -11,6 +11,7 @@
 #include <linux/htmm.h>
 
 #include "../../kernel/events/internal.h"
+#include "../profile.h"
 
 struct task_struct *access_sampling = NULL;
 struct perf_event ***mem_event;
@@ -196,6 +197,7 @@ static int ksamplingd(void *data)
 	sleep_timeout = usecs_to_jiffies(2000);
 
 	while (!kthread_should_stop()) {
+		guard(vmstat_stopwatch)(SAMPLING_NS);
 		int cpu, event, cond = false;
 
 		if (htmm_mode == HTMM_NO_MIG) {

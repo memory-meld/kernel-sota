@@ -4449,6 +4449,7 @@ int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
 
 static vm_fault_t do_numa_page(struct vm_fault *vmf)
 {
+	guard(vmstat_stopwatch)(HINT_FAULT_NS);
 	struct vm_area_struct *vma = vmf->vma;
 	struct page *page = NULL;
 	int page_nid = NUMA_NO_NODE;

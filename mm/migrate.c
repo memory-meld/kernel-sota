@@ -2244,6 +2244,7 @@ static int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
 int migrate_misplaced_page(struct page *page, struct vm_area_struct *vma,
 			   int node)
 {
+	guard(vmstat_stopwatch)(PROMOTE_NS);
 	pg_data_t *pgdat = NODE_DATA(node);
 	int isolated;
 	int nr_remaining;

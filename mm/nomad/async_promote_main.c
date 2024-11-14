@@ -256,6 +256,7 @@ static struct page *alloc_promote_page(struct page *page, unsigned long node)
 
 static void promote_work_handler(struct work_struct *w)
 {
+	guard(vmstat_stopwatch)(PROMOTE_NS);
 	int i;
 	int promotion_queued_out, err, promote_fail_nr;
 	uint64_t head, next;

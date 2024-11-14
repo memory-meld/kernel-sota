@@ -1308,6 +1308,7 @@ static bool need_memcg_cooling(struct mem_cgroup *memcg)
 
 void update_pginfo(pid_t pid, unsigned long address, enum events e)
 {
+	guard(vmstat_stopwatch)(PTEXT_NS);
 	struct task_struct *p = find_get_task_by_vpid(pid);
 	struct mm_struct *mm = p ? p->mm : NULL;
 	struct vm_area_struct *vma;
