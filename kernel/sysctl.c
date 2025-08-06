@@ -189,6 +189,8 @@ static int min_extfrag_threshold;
 static int max_extfrag_threshold = 1000;
 #endif
 
+static int sysctl_clear_vm_events;
+
 #endif /* CONFIG_SYSCTL */
 
 #if defined(CONFIG_BPF_SYSCALL) && defined(CONFIG_SYSCTL)
@@ -2936,6 +2938,13 @@ static struct ctl_table vm_table[] = {
 	},
 
 #endif /* CONFIG_COMPACTION */
+	{
+		.procname	= "clear_all_vm_events",
+		.data		= &sysctl_clear_vm_events,
+		.maxlen		= sizeof(int),
+		.mode		= 0200,
+		.proc_handler	= sysctl_clearvmevents_handler,
+	},
 	{
 		.procname	= "min_free_kbytes",
 		.data		= &min_free_kbytes,
