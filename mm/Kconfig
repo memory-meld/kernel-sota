@@ -903,6 +903,6 @@ source "mm/nomad/Kconfig"
 
 source "mm/memtis/Kconfig"
 
-source "mm/hagent/Kconfig"
+source "mm/demeter/Kconfig"
 
 endmenu

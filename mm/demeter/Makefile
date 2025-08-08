@@ -1,5 +1,5 @@
-obj-$(CONFIG_HAGENT) += hagent_balloon.o
+obj-$(CONFIG_DEMETER) += demeter_balloon.o
 
-hagent_balloon-objs += balloon.o
+demeter_balloon-objs += balloon.o
 
 CFLAGS_balloon.o += -include balloon-compact.h -Wno-gcc-compat -Wno-declaration-after-statement
