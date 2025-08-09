@@ -205,6 +205,7 @@ ForEachMacros:
   - 'for_each_lru'
   - 'for_each_matching_node'
   - 'for_each_matching_node_and_match'
+  - 'for_each_mem_cgroup'
   - 'for_each_member'
   - 'for_each_memcg_cache_index'
   - 'for_each_mem_pfn_range'

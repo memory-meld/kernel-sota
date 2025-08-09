@@ -903,6 +903,7 @@ int page_referenced(struct page *page,
 	count_vm_events(PTEA_SCANNED, mapcount);
 	return pra.referenced;
 }
+EXPORT_SYMBOL(page_referenced);
 
 static bool page_mkclean_one(struct page *page, struct vm_area_struct *vma,
 			    unsigned long address, void *arg)
