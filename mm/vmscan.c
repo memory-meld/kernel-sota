@@ -4725,3 +4725,81 @@ void check_move_unevictable_pages(struct pagevec *pvec)
 	}
 }
 EXPORT_SYMBOL_GPL(check_move_unevictable_pages);
+
+unsigned long rotate_lru_list(struct lruvec *lruvec, enum lru_list lru,
+			      struct mem_cgroup *memcg,
+			      unsigned long *referenced)
+{
+	enum {
+		ISOLATE_BATCH_SIZE = 512,
+	};
+	// isolate_lru_pages uses: reclaim_idx may_unmap order
+	struct scan_control control = {
+		// Fields used by isolate_lru_pages
+		.reclaim_idx = ZONE_NORMAL,
+		.may_unmap = 1,
+		// Use 0 as its the fallback value used by kswapd
+		.order = 0,
+		// Others
+		.target_mem_cgroup = memcg,
+	}, *sc = &control;
+	unsigned long total_scanned = 0;
+
+	for (unsigned long nr_scanned = 0, nr_taken = 0;
+	     !list_empty(&lruvec->lists[lru]);) {
+		LIST_HEAD(page_list);
+		// Isolate
+		{
+			unsigned long flags = 0;
+			spin_lock_irqsave(&lruvec->lru_lock, flags);
+			nr_taken = isolate_lru_pages(ISOLATE_BATCH_SIZE, lruvec,
+						     &page_list, &nr_scanned,
+						     sc, lru);
+			// We behave like kswapd so borrow its stastics PGSCAN_KSWAPD
+			enum vm_event_item item = PGSCAN_KSWAPD;
+			if (!cgroup_reclaim(sc))
+				__count_vm_events(item, nr_scanned);
+			__count_memcg_events(lruvec_memcg(lruvec), item,
+					     nr_scanned);
+			// We only scan anon pages, but try to be safe anyway
+			__count_vm_events(PGSCAN_ANON + is_file_lru(lru),
+					  nr_scanned);
+			spin_unlock_irqrestore(&lruvec->lru_lock, flags);
+		}
+
+		// Scan
+		{
+			struct page *page, *next;
+			list_for_each_entry_safe (page, next, &page_list, lru) {
+				unsigned long vm_flags = 0;
+				// Use kernel's page_referenced to examine PTE.A bits and trigger TLB flushes
+				(*referenced) += page_referenced(
+					page, false, memcg, &vm_flags);
+				++total_scanned;
+				cond_resched();
+			}
+		}
+
+		// Putback
+		{
+			unsigned long flags = 0;
+			spin_lock_irqsave(&lruvec->lru_lock, flags);
+			move_pages_to_lru(lruvec, &page_list);
+			__mod_node_page_state(
+				lruvec_pgdat(lruvec),
+				NR_ISOLATED_ANON + is_file_lru(lru), -nr_taken);
+			// We do not reclaim pages, so we do not need to update PGSTEAL_KSWAPD counters
+			spin_unlock_irqrestore(&lruvec->lru_lock, flags);
+		}
+
+		// We cannot get a full batch of pages, so stop scanning and try again later
+		// || nr_taken != nr_scanned
+		if (nr_scanned < ISOLATE_BATCH_SIZE)
+			break;
+
+		cond_resched();
+	}
+
+	return total_scanned;
+}
+EXPORT_SYMBOL(rotate_lru_list);
